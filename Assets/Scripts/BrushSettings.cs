@@ -11,7 +11,7 @@ public class BrushSettings : MonoBehaviour
 
     [SerializeField] private Slider sliderSize;
     [SerializeField] private Image colorPreview;
-    [SerializeField] private Image previewImage;
+    [SerializeField] private Image colorPicker;
 
     private Vector2Int pixelCoords;
     private float brushSize;
@@ -23,8 +23,8 @@ public class BrushSettings : MonoBehaviour
     {
         colorPreview.color = color;
         MousePainter.instance.SetBrushSettings(color, brushSize);
-        size = previewImage.rectTransform.sizeDelta;
-        spriteTexture = ((Texture2D)previewImage.mainTexture);
+        size = colorPicker.rectTransform.sizeDelta;
+        spriteTexture = ((Texture2D)colorPicker.mainTexture);
     }
     public void Done()
     {
@@ -33,17 +33,33 @@ public class BrushSettings : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButton(0) && Input.mousePosition.y > Screen.height / 2 - size.y / 2f)
+        if (Input.GetMouseButton(0))
         {
-            pixelCoords = new Vector2Int((int)((Math.Clamp(Input.mousePosition.x - Screen.width / 2, -size.x / 2f, size.y / 2f) + size.x / 2f) / size.x * spriteTexture.width), (int)((Math.Clamp(Input.mousePosition.y - Screen.height / 2 - 200, -size.x / 2f, size.y / 2f) + size.y / 2f) / size.y * spriteTexture.height));
 
-            color = spriteTexture.GetPixel(pixelCoords.x, pixelCoords.y);
-            color.a = 1;
-            colorPreview.color = color;
+
+            if (RectTransformUtility.RectangleContainsScreenPoint(colorPicker.rectTransform, Input.mousePosition))
+            {
+                Vector2 localPosition;
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(colorPicker.rectTransform, Input.mousePosition, null, out localPosition))
+                {
+                    Vector2 spriteSize = colorPicker.sprite.rect.size;
+
+                    Vector2 normalizedPosition = new Vector2(localPosition.x / spriteSize.x, localPosition.y / spriteSize.y);
+
+                    Texture2D texture = colorPicker.sprite.texture;
+
+                    int x = Mathf.FloorToInt(normalizedPosition.x * texture.width) + (int)size.x / 2;
+                    int y = Mathf.FloorToInt(normalizedPosition.y * texture.height) + (int)size.y / 2;
+
+                    color = texture.GetPixel(x * texture.width / (int)size.x, y * texture.height / (int)size.y);
+                    color.a = 1;
+                    colorPreview.color = color;
+                }
+            }
         }
+
+
         brushSize = sliderSize.value;
         colorPreview.transform.localScale = Vector3.one * brushSize;
     }
-
-    
 }
